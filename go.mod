@@ -1,4 +1,4 @@
-module github.com/xgy1102/zbputils
+module github.com/FloatTech/zbputils
 
 go 1.18
 
