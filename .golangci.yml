@@ -4,7 +4,7 @@ linters-settings:
     ignoretests: true
 
   goimports:
-    local-prefixes: github.com/FloatTech/zbputils
+    local-prefixes: github.com/xgy1102/zbputils
 
   forbidigo:
     # Forbid the following identifiers
