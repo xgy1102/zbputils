@@ -1,14 +1,15 @@
 package control
 
 import (
+	"errors"
 	"image"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/Coloured-glaze/gg"
 	"github.com/FloatTech/floatbox/file"
 	"github.com/FloatTech/floatbox/img/writer"
-	"github.com/FloatTech/floatbox/math"
 	ctrl "github.com/FloatTech/zbpctrl"
 	zero "github.com/wdvxdr1123/ZeroBot"
 
@@ -18,6 +19,8 @@ import (
 )
 
 const (
+	// PAGECNT card数量
+	PAGECNT    = 27
 	bannerpath = "data/zbpbanner/"
 	kanbanpath = "data/Control/"
 	bannerurl  = "https://gitcode.net/u011570312/zbpbanner/-/raw/main/"
@@ -30,19 +33,15 @@ type plugininfo struct {
 	status bool
 }
 
-var (
-	// 底图缓存
-	imgtmp image.Image
-	// lnperpg 每页行数
-	lnperpg = 9
-)
+// 底图缓存
+var imgtmp image.Image
 
 func init() {
 	err := os.MkdirAll(bannerpath, 0755)
 	if err != nil {
 		panic(err)
 	}
-	_, err = file.GetLazyData(kanbanpath+"icon.jpg", Md5File, true)
+	_, err = file.GetLazyData(kanbanpath+"icon.jpg", true)
 	if err != nil {
 		panic(err)
 	}
@@ -61,20 +60,18 @@ func drawservicesof(gid int64) (imgs [][]byte, err error) {
 	})
 	k := 0
 	// 分页
-	if len(plist) < 3*lnperpg {
-		// 如果单页显示数量超出了总数量
-		lnperpg = math.Ceil(len(plist), 3)
+	page := len(plist) / PAGECNT
+	if len(plist)%PAGECNT != 0 {
+		page++
 	}
-	page := math.Ceil(len(plist), 3*lnperpg)
 	imgs = make([][]byte, page)
 	if imgtmp == nil {
 		imgtmp, err = rendercard.Titleinfo{
-			Line:          lnperpg,
 			Lefttitle:     "服务列表",
-			Leftsubtitle:  "service_list",
-			Righttitle:    "FloatTech",
-			Rightsubtitle: "ZeroBot-Plugin",
-			Fontpath:      text.SakuraFontFile,
+			Leftsubtitle:  "master qq2594322996",
+			Righttitle:    "Ener",
+			Rightsubtitle: "向晚bot",
+			Textpath:      text.SakuraFontFile,
 			Imgpath:       kanbanpath + "icon.jpg",
 		}.Drawtitle()
 		if err != nil {
@@ -82,14 +79,15 @@ func drawservicesof(gid int64) (imgs [][]byte, err error) {
 		}
 	}
 	var card image.Image
-	for l := 0; l < page; l++ { // 页数
+	for l := 0; l < page; l++ {
 		one := gg.NewContextForImage(imgtmp)
 		x, y := 30, 30+300+30
-		for j := 0; j < lnperpg; j++ { // 行数
-			for i := 0; i < 3; i++ { // 列数
+		for j := 0; j < 9; j++ {
+			for i := 0; i < 3; i++ {
 				if k == len(plist) {
 					break
 				}
+				kstr := strconv.Itoa(k)
 				banner := ""
 				switch {
 				case strings.HasPrefix(plist[k].banner, "http"):
@@ -102,17 +100,20 @@ func drawservicesof(gid int64) (imgs [][]byte, err error) {
 					banner = plist[k].banner
 				default:
 					_, err = file.GetCustomLazyData(bannerurl, bannerpath+plist[k].name+".png")
-					if err == nil {
-						banner = bannerpath + plist[k].name + ".png"
+					if err != nil {
+						err = errors.New("ERROR: 插件背景图下载失败或是自定义插件")
+						return
 					}
+					banner = bannerpath + plist[k].name + ".png"
 				}
 				card, err = rendercard.Titleinfo{
-					Lefttitle:    plist[k].name,
-					Leftsubtitle: plist[k].brief,
-					Imgpath:      banner,
-					Fontpath:     text.SakuraFontFile,
-					Fontpath2:    text.BoldFontFile,
-					Status:       plist[k].status,
+					Lefttitle:     plist[k].name,
+					Leftsubtitle:  plist[k].brief,
+					Rightsubtitle: kstr,
+					Imgpath:       banner,
+					Textpath:      text.SakuraFontFile,
+					Textpath2:     text.BoldFontFile,
+					Status:        plist[k].status,
 				}.Drawcard()
 				if err != nil {
 					return
@@ -147,21 +148,4 @@ func truncate(one *gg.Context, text string, maxW float64) (string, float64) {
 		}
 	}
 	return string(res), w
-}
-
-// 获取字体和头像
-func geticonandfont() (err error) {
-	_, err = file.GetLazyData(text.BoldFontFile, Md5File, true)
-	if err != nil {
-		return
-	}
-	_, err = file.GetLazyData(text.SakuraFontFile, Md5File, true)
-	if err != nil {
-		return
-	}
-	_, err = file.GetLazyData(kanbanpath+"icon.jpg", Md5File, true)
-	if err != nil {
-		return
-	}
-	return
 }
